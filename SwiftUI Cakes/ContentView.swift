@@ -7,10 +7,34 @@
 //
 
 import SwiftUI
+import Combine
+
+class Order: BindableObject {
+    var didChange = PassthroughSubject<Void, Never>()
+    
+    static let types = ["Vanilla", "Nova", "Chocolate"]
+    var type = 0 { didSet { update() } }
+    
+    func update() {
+         didChange.send()
+    }
+}
 
 struct ContentView : View {
+    @ObjectBinding var order = Order()
+    
     var body: some View {
-        Text("Hello World")
+        NavigationView{
+            Form {
+                Picker(selection: $order.type, label: Text("Select your cake type")) {
+                    ForEach(0 ..< Order.types.count) {
+                        Text(Order.types[$0]).tag($0)
+                    }
+                }
+            }
+            .navigationBarTitle(Text("Cupcake Corner"))
+        }
+        
     }
 }
 
