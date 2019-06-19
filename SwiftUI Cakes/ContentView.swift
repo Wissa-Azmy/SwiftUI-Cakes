@@ -14,6 +14,10 @@ class Order: BindableObject {
     
     static let types = ["Vanilla", "Nova", "Chocolate"]
     var type = 0 { didSet { update() } }
+    var quantity = 3 { didSet { update() }}
+    var extraFrosting = false { didSet { update() }}
+    var extraSprinkles = false { didSet { update() }}
+    var specialRequestsEnabled = false { didSet { update() }}
     
     func update() {
          didChange.send()
@@ -26,9 +30,30 @@ struct ContentView : View {
     var body: some View {
         NavigationView{
             Form {
-                Picker(selection: $order.type, label: Text("Select your cake type")) {
-                    ForEach(0 ..< Order.types.count) {
-                        Text(Order.types[$0]).tag($0)
+                Section {
+                    Picker(selection: $order.type, label: Text("Select your cake type")) {
+                        ForEach(0 ..< Order.types.count) {
+                            Text(Order.types[$0]).tag($0)
+                        }
+                    }
+                    
+                    Stepper(value: $order.quantity) {
+                        Text("Number of cakes: \(order.quantity)")
+                    }
+                }
+                
+                Section {
+                    Toggle(isOn: $order.specialRequestsEnabled) {
+                        Text("Do you have special request?")
+                    }
+                    
+                    if order.specialRequestsEnabled {
+                        Toggle(isOn: $order.extraFrosting) {
+                            Text("Add Extra Frosting")
+                        }
+                        Toggle(isOn: $order.extraSprinkles) {
+                            Text("Add Extra Sprinkles")
+                        }
                     }
                 }
             }
