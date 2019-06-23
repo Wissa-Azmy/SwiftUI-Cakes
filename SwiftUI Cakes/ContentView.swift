@@ -9,10 +9,14 @@
 import SwiftUI
 import Combine
 
-class Order: BindableObject {
-    var didChange = PassthroughSubject<Void, Never>()
+class Order: BindableObject, Codable {
+    enum CodingKeys: String, CodingKey {
+        case type, quantity, extraFrosting, extraSprinkles, name, address, city, zip
+    }
     
+    var didChange = PassthroughSubject<Void, Never>()
     static let types = ["Vanilla", "Nova", "Chocolate"]
+    
     var type = 0 { didSet { update() } }
     var quantity = 3 { didSet { update() }}
     var extraFrosting = false { didSet { update() }}
@@ -39,6 +43,8 @@ class Order: BindableObject {
 
 struct ContentView : View {
     @ObjectBinding var order = Order()
+    @State var confiramtionMessage = ""
+    @State var showingConfiramtion = false
     
     var body: some View {
         NavigationView{
@@ -88,11 +94,38 @@ struct ContentView : View {
             }
                 
             .navigationBarTitle(Text("Cupcake Corner"))
+            .presentation($showingConfiramtion) {
+                Alert(title: Text("Thank you!"), message: Text(confiramtionMessage), dismissButton: .default(Text("OK")))
+            }
         }
     }
     
     func placeOrder() {
+        guard let encodedOrderData = try? JSONEncoder().encode(order) else {
+            print("Failed to encode order")
+            return
+        }
         
+        let url = URL(string: "https://reqres.in/api/cupcakes")!
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpMethod = "POST"
+        request.httpBody = encodedOrderData
+        
+        URLSession.shared.dataTask(with: request) {
+            guard let data = $0 else {
+                print("No data in response: \($2?.localizedDescription ?? "Unknown Error")")
+                return
+            }
+            
+            if let decodedOrder = try? JSONDecoder().decode(Order.self, from: data) {
+                self.confiramtionMessage = "Your order for \(decodedOrder.quantity)x \(Order.types[decodedOrder.type].lowercased()) cupcakes is on its way!"
+                self.showingConfiramtion = true
+            } else {
+                let dataString = String(decoding: data, as: UTF8.self)
+                print("Invalid response: \(dataString)")
+            }
+        }.resume()
     }
 }
 
